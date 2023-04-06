@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confidence Cards Game</title>
+    <script>
+        function toggleInput(name) {
+            event.preventDefault(); 
+            document.getElementById(name).readOnly = true;
+            document.getElementById("confirmation "+name).classList.add("hidden");
+          }
+    </script>
+</head>
+<body>
+    <h1>Confidence Cards Game</h1>
+    {% if current_status == -1 %}
+    <h2>Pre Match Inputs</h2>
+    <form action="/match_setup" method="POST">
+        <label for="players">Number of Players:</label>
+        <input type="number" id="players" name="players"><br><br>
+        <label for="rounds">Number of Rounds:</label>
+        <input type="number" id="rounds" name="rounds"><br><br>
+        <input type="submit" value="Start Match">
+    </form>
+    {% endif %}
+    {% if num_players > 0 %}
+        <h2>Player Creation</h2>
+        <form action="/add_player" method="POST">
+            <label for="player">Enter Player Name: </label>
+            <input type="text" id="player" name="player"><br><br>
+            <input type="submit" value="Add Player Entry"><br>
+        </form>
+    {% endif %}
+    
+    {% if current_status == 0 and num_players == 0 and num_rounds == total_rounds %}
+        <form action="/change_rounds" method="POST">
+            <label for="new_rounds">New number of rounds</label>
+            <input type="number" id="new_rounds" name="new_rounds">
+            <input type="submit" value="Change Rounds">
+            <br><br>
+        </form>
+        <form action="/add_new_player" method="POST">
+            <label for="new_player">Add a new Player</label>
+            <input type="text" id="new_player" name="new_player">
+            <input type="submit" value="Add Player">
+            <br><br>
+        </form>
+        <form action="/start_playing" method="POST">
+            <input type="submit" value="Start Playing!">
+        </form>
+    {% endif %}
+
+    {% if current_status == 1 and num_rounds > 0 %}
+        <h2>Playing with {{ num_rounds - 1 }} cards</h2>
+        <form action="/add_round" method="POST">
+            {% for player in players %}
+            <label for="{{ player['name'] }}">{{ player['name'] }}:</label>
+            <input type="number" id="{{ player['name'] }}" name="{{ player['name'] }}">
+            {% set n = player['name'] %}
+            <button onclick="toggleInput('{{ n }}')" id="confirmation {{player['name']}}">Confirm</button>
+            <input type="radio" name="correctness {{ player['name'] }}" value="correct">
+            <label>Correct</label>
+            <input type="radio" name="correctness {{ player['name'] }}" value="incorrect">
+            <label>Incorrect</label>
+            <style>
+                .hidden {
+                  display: none;
+                }
+            </style>
+            <br>
+            {% endfor %}
+            <input type="submit" value="Submit this Round.">
+        </form>
+    {% endif %}
+    
+    <!-- <h2>Add Round</h2>
+        <form action="/add_round" method="POST">
+            <label for="round">Round Number:</label>
+            <input type="number" id="round" name="round"><br><br>
+            {% for player in players %}
+                <label for="{{ player['name'] }}">{{ player['name'] }}:</label>
+                <input type="number" id="{{ player['name'] }}" name="{{ player['name'] }}"><br><br>
+            {% endfor %}
+            <input type="submit" value="Add">
+        </form>
+        <h2>Calculate Scores</h2>
+        <form action="/calculate_scores" method="POST">
+            <input type="submit" value="Calculate">
+        </form>
+        <h2>Scores</h2>
+        <ul>
+            {% for player in players %}
+                <li>{{ player['name'] }}: {{ player.get('total_score', sum(player['scores'])) }}</li>
+            {% endfor %}
+        </ul> 
+    -->
+    {% if current_status != -1 %}
+    <style>
+        table {
+            border-collapse: collapse;
+            width: auto;
+        }
+        th, td {
+            border: 2px solid black;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #ddd;
+        }
+    </style>
+
+    <table>
+        <thead>
+          <tr>
+            <th>Ranking</th>
+            <th>Player Name</th>
+            {% for round in range(1, total_rounds + 1) %}
+            <th> Round {{ round }}</th>
+            {% endfor %}
+            <th>Sum Scores</th>
+            <th>Total Correct</th>
+            <th>Total Scores</th>
+          </tr>
+        </thead>
+        {% set curr_num = namespace(rank=1) %}
+        <tbody>
+            {% for x in sorted_players %}
+            <tr>
+            <td>{{ curr_num.rank }}</td>
+            <td>{{ x['name'] }}</td>
+            {% for r in range(0, total_rounds)%}
+                <td>{{ x['scores'][r] if r < (x['scores'])|length else '-' }}</td>
+            {% endfor %}
+            <td>{{ x['sum_score'] }}</td>
+            <td>{{ x['correct_count'] }}</td>
+            <td>{{ x['total_score'] }}</td>
+            </tr>
+            {% set curr_num.rank = curr_num.rank + 1 %}
+            {% endfor %}
+        </tbody>
+      </table>      
+    {% endif %}
+    <form action="/new_game" method="POST">
+        <input type="submit" value="New Game">
+    </form>
+</body>
+</html>
+
